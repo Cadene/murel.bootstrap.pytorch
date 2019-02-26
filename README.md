@@ -104,9 +104,9 @@ Then, several files are going to be created in `logs/vqa2/murel`:
 - ckpt_last_engine.pth.tar (checkpoints of last epoch)
 - ckpt_last_model.pth.tar
 - ckpt_last_optimizer.pth.tar
-- ckpt_best_eval_epoch.predicate.R_50_engine.pth.tar (checkpoints of best epoch)
-- ckpt_best_eval_epoch.predicate.R_50_model.pth.tar
-- ckpt_best_eval_epoch.predicate.R_50_optimizer.pth.tar
+- ckpt_best_eval_epoch.accuracy_top1_engine.pth.tar (checkpoints of best epoch)
+- ckpt_best_eval_epoch.accuracy_top1_model.pth.tar
+- ckpt_best_eval_epoch.accuracy_top1_optimizer.pth.tar
 
 Many options are available in the [options directory](https://github.com/Cadene/murel.bootstrap.pytorch/blob/master/murel/options).
 
