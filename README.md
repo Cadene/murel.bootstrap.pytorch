@@ -1,12 +1,12 @@
 # MUREL: Multimodal Relational Reasoning for Visual Question Answering
 
-The **MuRel network** is a Machine Learning model learned end-to-end to answer questions about images. First, it extracts a graphical representation of the scene where each node is an object or region. Secondly, it fuses the question representation multiple times with a MuRel cell to progressively refines visual and question interactions. Finally, it answers the question via an implicit attention mechanism and a bilinear model. Interestingly, the MuRel network doesn't include an explicit attention mechanism, usually at the core of state-of-the-art models. Its rich vectorial representation of the scene can even be leveraged to visualize the reasoning process at each step.
+The **MuRel network** is a Machine Learning model learned end-to-end to answer questions about images. It relies on the object bounding boxes extracted from the image to build a complitely connected graph where each node corresponds to an object or region. The MuRel network contains a MuRel cell over which it iterates to fuse the question representation with local region features, progressively refining visual and question interactions. Finally, after a global aggregation of local representations, it answers the question using a bilinear model. Interestingly, the MuRel network doesn't include an explicit attention mechanism, usually at the core of state-of-the-art models. Its rich vectorial representation of the scene can even be leveraged to visualize the reasoning process at each step.
 
 <p align="center">
     <img src="https://github.com/Cadene/murel.bootstrap.pytorch/blob/master/assets/murel_net.png?raw=true" width="900"/>
 </p>
 
-The **MuRel cell** is a novel reasoning primitive which models interactions between question and image regions. Its pairwise relational module enriches the multimodal representations of each node by taking their neighboorhood into account in the modeling.
+The **MuRel cell** is a novel reasoning module which models interactions between question and image regions. Its pairwise relational component enriches the multimodal representations of each node by taking their context into account in the modeling.
 
 <p align="center">
     <img src="https://github.com/Cadene/murel.bootstrap.pytorch/blob/master/assets/murel_cell.png?raw=true" width="550"/>
