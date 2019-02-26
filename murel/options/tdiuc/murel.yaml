@@ -1,0 +1,104 @@
+exp:
+  dir: logs/tdiuc/murel
+  resume: # last, best_[...], or empty (from scratch)
+dataset:
+  import: block.datasets.factory
+  name: tdiuc
+  dir: data/vqa/tdiuc
+  train_split: train
+  eval_split: val # or test
+  nb_threads: 4
+  batch_size: 84
+  nans: 1480
+  minwcount: 0
+  nlp: mcb
+  dir_rcnn: data/vqa/tdiuc/extract_rcnn/2018-04-27_bottom-up-attention_fixed_36
+model:
+  name: default
+  network:
+    import: murel.models.networks.factory
+    name: murel_net
+    txt_enc:
+      name: skipthoughts
+      type: BayesianUniSkip
+      dropout: 0.25
+      fixed_emb: False
+      dir_st: data/skip-thoughts
+    self_q_att: True
+    n_step: 3
+    shared: True
+    cell:
+      residual: True
+      fusion:
+        type: block
+        input_dims: [4800, 2048]
+        output_dim: 2048
+        mm_dim: 1000
+        chunks: 20
+        rank: 15
+        dropout_input: 0.
+        dropout_pre_lin: 0.
+      pairwise:
+        residual: True
+        fusion_coord:
+          type: block
+          input_dims: [4, 4]
+          output_dim: 2048
+          mm_dim: 200
+          chunks: 5
+          rank: 5
+          dropout_input: 0.
+          dropout_pre_lin: 0.
+        fusion_feat:
+          type: block
+          input_dims: [2048, 2048]
+          output_dim: 2048
+          mm_dim: 200
+          chunks: 5
+          rank: 5
+          dropout_input: 0.
+          dropout_pre_lin: 0.
+        agg:
+          type: max
+    agg:
+      type: max
+    classif:
+      fusion:
+        type: block
+        input_dims: [4800, 2048]
+        output_dim: 1480 #Fixed
+        mm_dim: 1600
+        chunks: 20
+        rank: 10
+        dropout_input: 0.1
+        dropout_pre_lin: 0.
+  criterion:
+    import: murel.models.criterions.factory
+    name: vqa_cross_entropy
+  metric:
+    import: murel.models.metrics.factory
+    name: vqa_accuracies
+optimizer:
+  import: murel.optimizers.factory
+  name: Adam
+  lr: 0.0003
+  gradual_warmup_steps: [0.5, 2.0, 7.0] #torch.linspace
+  lr_decay_epochs: [14, 24, 2] #range
+  lr_decay_rate: .25
+engine:
+  name: logger
+  debug: False
+  print_freq: 10
+  nb_epochs: 22
+  saving_criteria:
+  - eval_epoch.accuracy_top1:max
+misc:
+  logs_name:
+  cuda: True
+  seed: 1337
+view:
+  name: plotly
+  items:
+  - logs:train_epoch.loss+logs:eval_epoch.loss
+  - logs:train_epoch.accuracy_top1+logs:eval_epoch.accuracy_top1
+  - logs_train_oe:train_epoch.overall+logs_val_oe:eval_epoch.overall
