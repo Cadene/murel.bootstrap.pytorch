@@ -112,14 +112,14 @@ Many options are available in the [options directory](https://github.com/Cadene/
 
 ### Evaluate a model
 
-At the end of the training procedure, you can evaluate your model on the testing set. In this example, [boostrap/run.py](https://github.com/Cadene/bootstrap.pytorch/blob/master/bootstrap/run.py) load the options from your experiment directory, resume the best checkpoint on the validation set and start an evaluation on the testing set instead of the validation set while skipping the training set (train_split is empty). Thanks to `--misc.logs_name`, the logs will be written in the new `logs_predicate.txt` and `logs_predicate.json` files, instead of being appended to the `logs.txt` and `logs.json` files.
+At the end of the training procedure, you can evaluate your model on the testing set. In this example, [boostrap/run.py](https://github.com/Cadene/bootstrap.pytorch/blob/master/bootstrap/run.py) load the options from your experiment directory, resume the best checkpoint on the validation set and start an evaluation on the testing set instead of the validation set while skipping the training set (train_split is empty). Thanks to `--misc.logs_name`, the logs will be written in the new `logs_test.txt` and `logs_test.json` files, instead of being appended to the `logs.txt` and `logs.json` files.
 ```
 python -m bootstrap.run \
 -o logs/vqa2/murel/options.yaml \
 --exp.resume best_accuracy_top1 \
 --dataset.train_split \
 --dataset.eval_split test \
---misc.logs_name predicate
+--misc.logs_name test
 ```
 
 ## Reproduce results
