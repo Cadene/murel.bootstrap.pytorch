@@ -3,7 +3,7 @@ from block.datasets.tdiuc import TDIUC
 from block.datasets.vrd import VRD
 from block.datasets.vg import VG
 from block.datasets.vqa_utils import ListVQADatasets
-from block.datasets.vqa2 import VQA2
+from .vqa2 import VQA2
 from .vqacp2 import VQACP2
 
 def factory(engine=None):

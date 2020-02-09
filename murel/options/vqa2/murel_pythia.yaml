@@ -1,5 +1,5 @@
 exp:
-  dir: logs/vqa2/murel
+  dir: logs/vqa2/murel_pythia
   resume: # last, best_[...], or empty (from scratch)
 dataset:
   import: murel.datasets.factory
@@ -7,14 +7,19 @@ dataset:
   dir: data/vqa/vqa2
   train_split: train
   eval_split: val # or test
-  proc_split: train # or trainval (preprocessing split, must be equal to train_split)
-  nb_threads: 4
-  batch_size: 84
+  proc_split: trainval # or trainval (preprocessing split, must be equal to train_split)
+  nb_threads: 16
+  batch_size: 512
   nans: 3000
   minwcount: 0
   nlp: mcb
   samplingans: True
-  dir_rcnn: data/vqa/coco/extract_rcnn/2018-04-27_bottom-up-attention_fixed_36
+  dir_rcnn: data/vqa/coco/extract_rcnn/pythia_fixed_100 # TODO: verify on jz
+  #dir_rcnn: data/vqa/coco/extract_rcnn/2018-04-27_bottom-up-attention_fixed_36
+  pythia_preprocess: False
+  full_trainval: False
+  use_minival: True # TODO: verify compatibility with full_trainval
+  max_nb_regions: 36
   vg: False
   dir_vg: data/vqa/vgenome
   dir_rcnn_vg: data/vqa/vgenome/extract_rcnn/2018-04-27_bottom-up-attention_fixed_36
@@ -30,6 +35,12 @@ model:
       fixed_emb: False
       dir_st: data/vqa/skip-thoughts
     self_q_att: True
+    img_enc:
+      image_feat_dim: 2048
+      type: finetune_faster_rcnn_fpn_fc7
+      finetune_faster_rcnn_fpn_fc7:
+        weights_file: data/vqa/detectron_fix_100/fc6/fc7_w.pkl
+        bias_file: data/vqa/detectron_fix_100/fc6/fc7_b.pkl
     n_step: 3
     shared: True
     cell:

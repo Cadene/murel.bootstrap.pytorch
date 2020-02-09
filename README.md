@@ -50,6 +50,7 @@ source activate murel
 git clone --recursive https://github.com/Cadene/murel.bootstrap.pytorch.git
 cd murel.bootstrap.pytorch
 pip install -r requirements.txt
+conda install opencv
 ```
 
 ### 3. Download datasets

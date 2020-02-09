@@ -3,6 +3,7 @@ import itertools
 import os
 import numpy as np
 import scipy
+import pickle
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -13,6 +14,25 @@ from block.models.networks.vqa_net import factory_text_enc
 from block.models.networks.vqa_net import mask_softmax
 from block.models.networks.mlp import MLP
 from .murel_cell import MuRelCell
+
+class FinetuneFasterRcnnFpnFc7(nn.Module):
+
+    def __init__(self, in_dim, weights_file, bias_file):
+        super(FinetuneFasterRcnnFpnFc7, self).__init__()
+        with open(weights_file, 'rb') as w:
+            weights = pickle.load(w)
+        with open(bias_file, 'rb') as b:
+            bias = pickle.load(b)
+        out_dim = bias.shape[0]
+        self.lc = nn.Linear(in_dim, out_dim)
+        self.lc.weight.data.copy_(torch.from_numpy(weights))
+        self.lc.bias.data.copy_(torch.from_numpy(bias))
+        self.out_dim = out_dim
+
+    def forward(self, image):
+        i2 = self.lc(image)
+        i3 = F.relu(i2)
+        return i3
 
 
 class MuRelNet(nn.Module):
@@ -46,6 +66,13 @@ class MuRelNet(nn.Module):
         if self.self_q_att:
             self.q_att_linear0 = nn.Linear(2400, 512)
             self.q_att_linear1 = nn.Linear(512, 2)
+
+        img_enc_opt = Options()['model.network'].get('img_enc', None)
+        self.img_enc = None
+        if img_enc_opt is not None:
+            self.img_enc = FinetuneFasterRcnnFpnFc7(img_enc_opt['image_feat_dim'],
+                img_enc_opt['finetune_faster_rcnn_fpn_fc7']['weights_file'],
+                img_enc_opt['finetune_faster_rcnn_fpn_fc7']['bias_file'])
 
         if self.shared:
             self.cell = MuRelCell(**cell)
@@ -98,7 +125,10 @@ class MuRelNet(nn.Module):
         l = batch['lengths'].data
         c = batch['norm_coord']
 
-        q = self.process_question(q, l)
+        if self.img_enc is not None:
+            v = self.img_enc(v)
+
+        q, _ = self.process_question(q, l)
 
         bsize = q.shape[0]
         n_regions = v.shape[1]
@@ -130,10 +160,10 @@ class MuRelNet(nn.Module):
 
     def process_question(self, q, l):
         q_emb = self.txt_enc.embedding(q)
-        q, _ = self.txt_enc.rnn(q_emb)
+        q_words, _ = self.txt_enc.rnn(q_emb)
 
         if self.self_q_att:
-            q_att = self.q_att_linear0(q)
+            q_att = self.q_att_linear0(q_words)
             q_att = F.relu(q_att)
             q_att = self.q_att_linear1(q_att)
             q_att = mask_softmax(q_att, l)
@@ -143,23 +173,58 @@ class MuRelNet(nn.Module):
                 q_outs = []
                 for q_att in q_atts:
                     q_att = q_att.unsqueeze(2)
-                    q_att = q_att.expand_as(q)
-                    q_out = q_att*q
+                    q_att = q_att.expand_as(q_words)
+                    q_out = q_att*q_words
                     q_out = q_out.sum(1)
                     q_outs.append(q_out)
                 q = torch.cat(q_outs, dim=1)
             else:
-                q_att = q_att.expand_as(q)
-                q = q_att * q
+                q_att = q_att.expand_as(q_words)
+                q = q_att * q_words
                 q = q.sum(1)
         else:
             # l contains the number of words for each question
             # in case of multi-gpus it must be a Tensor
             # thus we convert it into a list during the forward pass
             l = list(l.data[:,0])
-            q = self.txt_enc._select_last(q, l)
+            q = self.txt_enc._select_last(q_words, l)
 
-        return q
+        return q, q_words
+
+    # def process_question(self, q, l):
+
+    #     q_emb = self.txt_enc.embedding(q)
+    #     q_mask = (q!=0).view(-1,q.size(1), 1).expand_as(q_emb)
+    #     q_mask = q_mask.float()
+    #     q_emb = q_emb*q_mask
+
+    #     q_words, _ = self.txt_enc.rnn(q_emb)
+    #     if self.self_q_att:
+    #         q_att = self.q_att_linear0(q_words)
+    #         q_att = F.relu(q_att)
+    #         q_att = self.q_att_linear1(q_att)
+    #         q_att = mask_softmax(q_att, l)
+    #         #self.q_att_coeffs = q_att
+    #         if q_att.size(2) > 1:
+    #             q_atts = torch.unbind(q_att, dim=2)
+    #             q_outs = []
+    #             for q_att in q_atts:
+    #                 q_att = q_att.unsqueeze(2)
+    #                 q_att = q_att.expand_as(q)
+    #                 q_out = q_att*q
+    #                 q_out = q_out.sum(1)
+    #                 q_outs.append(q_out)
+    #             q = torch.cat(q_outs, dim=1)
+    #         else:
+    #             q_att = q_att.expand_as(q)
+    #             q = q_att * q
+    #             q = q.sum(1)
+    #     else:
+    #         l = list(l.data[:,0])
+    #         q = self.txt_enc._select_last(q_words, l)
+
+    #     return q, q_words
+
 
     def process_answers(self, out):
         batch_size = out['logits'].shape[0]
